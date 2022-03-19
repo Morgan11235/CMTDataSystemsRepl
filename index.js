@@ -33,6 +33,7 @@ const scheduleModel = mongoose.model('Schedule', scheduleSchema);
 
 const sampleSchema = new Schema({
 	projectNumber: String,
+	sampleNumber: String,
 	scheduleNumber: String,
 	sampleDate: String,
 	sampleType: String, 
@@ -94,7 +95,29 @@ const generateUnassignedPickupList = function(req, res, next){
 	})
 }
 
-//UNASSIGNED SAMPLE PICKUPS
+//SAMPLES LIST
+let sampleProjNumArr = [];
+let sampleSchedNumArr = [];
+let sampleNumberArr = [];
+let sampleDateArr = [];
+let sampleTypeArr = [];
+let sampleMaterialArr = [];
+let sampleTestsArr = [];
+
+const generateSampleList = function(req, res, next){
+	sampleModel.find({}).exec().then((docs) => {
+		for(var i=0; i<docs.length; i++){
+			sampleProjNumArr.push(docs[i]['projectNumber'])
+			sampleSchedNumArr.push(docs[i]['scheduleNumber'])
+			sampleNumberArr.push(docs[i]['sampleNumber'])
+			sampleDateArr.push(docs[i]['sampleDate'])
+			sampleTypeArr.push(docs[i]['sampleType'])
+			sampleMaterialArr.push(docs[i]['sampleMaterial'])
+			sampleTestsArr.push(docs[i]['sampleTests'])
+		}
+	})
+	
+}
 
 // Landing Page 
 app.get('/', (req, res) => {
@@ -190,7 +213,8 @@ app.post('/createschedule', (req, res) => {
 		scheduleDate: req.body.scheduleDate,
 		scheduleStartTime: req.body.scheduleStartTime,
 		scheduleEndTime: req.body.scheduleEndTime,
-		scheduleType: req.body.scheduleType
+		scheduleType: req.body.scheduleType,
+		sampleAssigned: false
 	})
 	sched.save((error, newProject) => {
 		if(error) throw error
@@ -199,9 +223,29 @@ app.post('/createschedule', (req, res) => {
 })
 
 //SAMPLE ROUTES
-app.get('/labsamples', (req, res) => {
-	res.render(process.cwd() + '/views/Pug/labsamples')
+app.get('/labsamples', (req, res, next) => {
+	generateSampleList(req, res)
+	next()}, (req, res) => {	
+	res.render(process.cwd() + '/views/Pug/labsamples', 
+		{
+			samProNum : sampleProjNumArr, 
+			samSchedNum : sampleSchedNumArr,
+			samNum : sampleNumberArr,
+			samDate : sampleDateArr,
+			samType : sampleTypeArr,
+			samMaterial : sampleMaterialArr,
+			samTests : sampleTestsArr 
+		})
+	sampleProjNumArr = [];
+	sampleSchedNumArr = [];
+	sampleNumberArr = [];
+	sampleDateArr = [];
+	sampleTypeArr = [];
+	sampleMaterialArr = [];
+	sampleTestsArr = [];
 })
+
+	   
 
 app.get('/newsample', (req, res, next) => {
 	generateUnassignedPickupList(req, res)
@@ -213,10 +257,12 @@ app.get('/newsample', (req, res, next) => {
 				unassignedPickupArr = [];
 	
 })
+let sampleNumberIncrement = 1
 app.post('/createsample', (req, res) => {
 //ADD TESTS AND TEST METHODS TO ARRAYS	
 	let testList = [];
 	let methodList = [];
+	
 	if(req.body.proctor){
 		testList.push(req.body.proctor);
 		methodList.push(req.body.proctorTestMethod)
@@ -235,6 +281,7 @@ app.post('/createsample', (req, res) => {
 	}
 	const sample = new sampleModel({
 		scheduleNumber: req.body.pickupList,
+		sampleNumber: req.body.pickupList + '-' + sampleNumberIncrement, 
 		sampleDate: req.body.sampleDate,
 		sampleType: req.body.sampleType,
 		sampleMaterial: req.body.sampleMaterial,
@@ -243,8 +290,14 @@ app.post('/createsample', (req, res) => {
 		sampleTestMethods: methodList
 	})
 	sample.save((error, newSample) => {
-	scheduleModel.findOneAndUpdate({scheduleNumber: req.body.pickupList}, {sampleAssigned: true}).exec()
-	res.redirect('/labsamples');})
+	if(req.body.locksample){
+		scheduleModel.findOneAndUpdate({scheduleNumber: req.body.pickupList}, 						{sampleAssigned: true}).exec()
+		res.redirect('/labsamples');}
+	else {
+	(sampleNumberIncrement) += 1
+		res.redirect('/newsample')		
+		}
+	})
 })
 
 

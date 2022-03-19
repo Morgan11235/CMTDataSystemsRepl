@@ -1,2 +1,34 @@
-form(action="/newsample" method="GET")
+extends nav
+append head 
+		h1 <i>Soil Samples</i>
+		div(class="db-table")
+			div(id="sampleSchedNumColumn")
+				h2 Schedule Number
+				each num in samSchedNum
+					div(class="sampleRow")
+						p 
+							a(href='/schedule/'+ num) #{num}
+			div(id="sampleNumColumn")
+				h2 Sample Number
+				each sample in samNum
+					div(class="sampleRow")
+						p 
+							a(href='/samples/'+ sample) #{sample}
+			div(id="samDateColumn")
+				h2 Sample Date
+				each date in samDate
+					div(class="sampleRow")
+						p #{date}
+			div(id="samMaterialColumn")
+				h2 Sample Material
+				each mat in samMaterial
+					div(class="sampleRow")
+						p #{mat}
+			div(id="samTestsColumn")
+				h2 Assigned Tests
+				each group in samTests
+					div(class="sampleRow")
+						each test in group
+							p - #{test} 
+		form(action="/newsample" method="GET")
 			input(type="submit" value="Add Sample" class="create-button")
